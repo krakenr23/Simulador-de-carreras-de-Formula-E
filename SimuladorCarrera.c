@@ -11,7 +11,7 @@ Daniel Alejando Loyo
 @date Fecha ultima de modificacion: 14 de Noviembre del 2024
  */
 
-#include "/home/ict24crv/GrupoC/FundProgra/MisBibliotecas/MiBiblioteca.h"
+#include "/home/Usuario/2024Otono/FundProgra/MisBibliotecas/MiBiblioteca.h"
 
 #define Max_Pilotos 22
 #define Max_Equipos 10
