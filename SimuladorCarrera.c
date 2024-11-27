@@ -6,6 +6,7 @@
 #define MAX_PAISES 10
 #define MAX_EQUIPOS 10
 #define MAX_PILOTOS 22
+#define MAX_PUNTOS 10
 
 typedef struct {
     char id[10];
@@ -24,6 +25,10 @@ typedef struct {
     int numero;
     char id_equipo[10];
     char id_pais[10];
+    int posicion_inicial;  // Posición de inicio en la carrera
+    int posicion_final;    // Posición final en la carrera
+    int puntos;            // Puntos acumulados
+    int vuelta_rapida;     // 1 si hizo vuelta rápida, 0 de otro modo
 } Piloto;
 
 // Declaración de funciones
@@ -47,6 +52,10 @@ void agregarPiloto(Piloto *pilotos, int *contador_pilotos, Equipo *equipos, int 
 void modificarPiloto(Piloto *pilotos, int contador_pilotos, Equipo *equipos, int total_equipos, Pais *paises, int total_paises);
 void mostrarPilotos(Piloto *pilotos, int contador_pilotos, Equipo *equipos, int total_equipos, Pais *paises, int total_paises);
 void eliminarPiloto(Piloto *pilotos, int *contador_pilotos);
+void simularCarrera(Piloto *pilotos, int total_pilotos);
+void simularCarrera(Piloto *pilotos, int total_pilotos);
+
+
 
 void generarId(char *prefijo, int numero, char *resultado);
 
@@ -66,21 +75,22 @@ int main() {
         scanf("%d", &opcion);
 
         switch (opcion) {
-            case 1:
-                menuCatalogos(&contador_paises, paises, &contador_equipos, equipos, &contador_pilotos, pilotos);
-                break;
-            case 2:
-                printf("Funcionalidad de simulación de carreras pendiente.\n");
-                break;
-            case 3:
-                printf("Funcionalidad de resultados de carreras pendiente.\n");
-                break;
-            case 4:
-                printf("Saliendo del programa.\n");
-                exit(0);
-            default:
-                printf("Opción no válida.\n");
-        }
+    case 1:
+        menuCatalogos(&contador_paises, paises, &contador_equipos, equipos, &contador_pilotos, pilotos);
+        break;
+    case 2:
+        simularCarrera(pilotos, contador_pilotos);
+        break;
+    case 3:
+        printf("Funcionalidad de resultados de carreras pendiente.\n");
+        break;
+    case 4:
+        printf("Saliendo del programa.\n");
+        exit(0);
+    default:
+        printf("Opción no válida.\n");
+}
+
     }
     return 0;
 }
@@ -494,6 +504,92 @@ void eliminarPiloto(Piloto *pilotos, int *contador_pilotos) {
         }
     }
     printf("Piloto no encontrado.\n");
+}
+
+void simularCarrera(Piloto *pilotos, int total_pilotos) {
+    if (total_pilotos != MAX_PILOTOS) {
+        printf("Debe haber exactamente %d pilotos registrados para simular una carrera.\n", MAX_PILOTOS);
+        return;
+    }
+
+    // Declaración de variables
+    int polePositionIndex = rand() % total_pilotos; // Índice aleatorio para pole position
+    int vueltaRapidaIndex = rand() % total_pilotos; // Índice aleatorio para vuelta rápida
+    int puntos[MAX_PUNTOS] = {25, 18, 15, 12, 10, 8, 6, 4, 2, 1}; // Tabla de puntos
+
+    Piloto *clasificados[MAX_PILOTOS];
+    Piloto *finalistas[MAX_PILOTOS];
+    int descalificadosIndices[9];
+
+    // Asignar la pole position
+    clasificados[polePositionIndex] = &pilotos[polePositionIndex];
+    clasificados[polePositionIndex]->posicion_inicial = 1;
+    clasificados[polePositionIndex]->puntos += 3;
+
+    // Asignar la vuelta rápida en clasificación
+    clasificados[vueltaRapidaIndex] = &pilotos[vueltaRapidaIndex];
+    clasificados[vueltaRapidaIndex]->vuelta_rapida = 1;
+    clasificados[vueltaRapidaIndex]->puntos += 1;
+
+    // Mezclar pilotos restantes para asignar posiciones iniciales
+    int pos = 2;
+    for (int i = 0; i < total_pilotos; i++) {
+        if (i != polePositionIndex && i != vueltaRapidaIndex) {
+            clasificados[i] = &pilotos[i];
+            clasificados[i]->posicion_inicial = pos++;
+        }
+    }
+
+    // Mostrar posiciones iniciales
+    printf("\nPosiciones iniciales:\n");
+    printf("Posición\tID\tNombre\tNúmero\n");
+    for (int i = 0; i < total_pilotos; i++) {
+        printf("%d\t\t%s\t%s\t%d\n", clasificados[i]->posicion_inicial, clasificados[i]->id, clasificados[i]->nombre, clasificados[i]->numero);
+    }
+
+    // Simular descalificaciones
+    int descalificados = (rand() % 9) + 1; // Número aleatorio entre 1 y 9
+    printf("\nPilotos descalificados: %d\n", descalificados);
+    for (int i = 0; i < descalificados; i++) {
+        descalificadosIndices[i] = rand() % total_pilotos;
+        pilotos[descalificadosIndices[i]].posicion_final = -1; // Marcados como descalificados
+    }
+
+    // Asignar posiciones finales
+    int finalistasCount = 0;
+    for (int i = 0; i < total_pilotos; i++) {
+        int descalificado = 0;
+        for (int j = 0; j < descalificados; j++) {
+            if (descalificadosIndices[j] == i) {
+                descalificado = 1;
+                break;
+            }
+        }
+        if (!descalificado) {
+            finalistas[finalistasCount++] = &pilotos[i];
+        }
+    }
+
+    // Asignar posiciones finales y puntos
+    for (int i = 0; i < finalistasCount; i++) {
+        finalistas[i]->posicion_final = i + 1;
+        if (i < MAX_PUNTOS) {
+            finalistas[i]->puntos += puntos[i];
+        }
+    }
+
+    // Asignar vuelta rápida en carrera
+    int vueltaRapidaCarreraIndex = rand() % MAX_PUNTOS;
+    finalistas[vueltaRapidaCarreraIndex]->puntos += 1;
+
+    // Mostrar resultados finales
+    printf("\nResultados finales:\n");
+    printf("Posición\tID\tNombre\tNúmero\tPuntos\n");
+    for (int i = 0; i < finalistasCount; i++) {
+        printf("%d\t\t%s\t%s\t%d\t%d\n", finalistas[i]->posicion_final, finalistas[i]->id, finalistas[i]->nombre, finalistas[i]->numero, finalistas[i]->puntos);
+    }
+
+    printf("\nSimulación realizada con éxito. Podrá verificar los resultados en la sección de resultados de la carrera.\n");
 }
 
 
